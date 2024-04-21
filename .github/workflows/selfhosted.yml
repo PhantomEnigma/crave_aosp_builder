@@ -31,19 +31,19 @@ on:
       LOCAL_MANIFEST:
         description: "Personal local manifest [repository or raw]:"
         required: true
-        default: 'https://github.com/sounddrill31/local_manifests'
+        default: 'https://github.com/PhantomEnigma/local_manifests'
       LOCAL_MANIFEST_BRANCH:
         description: "Personal local manifest's branch:"
         required: false
-        default: 'lineage-oxygen'
+        default: 'a13'
       DEVICE_NAME:
         description: "Device's codename:"
         required: true
-        default: "oxygen"
+        default: "Mi439_4_19"
       PRODUCT_NAME:
         description: "Product to build:"
         required: true
-        default: "lineage_oxygen"
+        default: "lineage_Mi439_4_19"
       BUILD_COMMAND:
         description: 'Command to be used for compiling:'
         required: true
@@ -58,13 +58,15 @@ on:
         - 'userdebug'
         - 'user' 
       CLEAN_BUILD:
-        description: 'Build with a clean workspace?'
+        description: 'Build with a clean workspace? Destroy project after completion? (optional)'
         required: true
         default: 'no'
         type: choice
         options: 
         - 'yes'
         - 'no'
+        - 'yes and destroy'
+        - 'no and destroy'
 
 jobs:
   run-devspace-and-tmux:
@@ -329,7 +331,7 @@ jobs:
         cd $PROJECTFOLDER
         
         jq '.projects = []' ~/crave.conf > tmp && mv tmp ~/crave.conf
-        if [ "${{ github.event.inputs.CLEAN_BUILD }}" == "yes" ]; then
+        if [ "${{ github.event.inputs.CLEAN_BUILD }}" == "yes" ] || [ "${{ github.event.inputs.CLEAN_BUILD }}" == "yes and destroy" ]; then
            export CLEAN="clean"
         fi
 
@@ -407,7 +409,7 @@ jobs:
 
       # Remove 'crave' clone
     - name: Destroy Crave Clone
-      if: ${{ always() }}
+      if: ${{ (github.event.inputs.CLEAN_BUILD == 'yes and destroy') || (github.event.inputs.CLEAN_BUILD == 'no and destroy') }}
       run: |
         if grep -q "$PROJECTFOLDER" <(crave clone list --json | jq -r '.clones[]."Cloned At"') && [ "${DCDEVSPACE}" == "1" ]; then
           crave clone destroy -y $PROJECTFOLDER || echo "Error removing $PROJECTFOLDER"
